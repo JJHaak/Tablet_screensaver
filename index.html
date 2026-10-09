@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="nl">
 <head>
@@ -20,7 +21,7 @@
     body {
       background-color: #000000;
       color: #00d4ff;
-      font-family: 'Share Tech Mono', monospace;
+      font-family: 'Orbitron', sans-serif;
       height: 100vh;
       width: 100vw;
       display: flex;
@@ -30,7 +31,7 @@
       cursor: none;
     }
 
-    /* Container voor inbrandbeveiliging (verschuift elke minuut lichtjes) */
+    /* Container voor inbrandbeveiliging */
     #screensaver-container {
       text-align: center;
       transition: transform 1s ease-in-out;
@@ -40,45 +41,45 @@
     /* 24-uurs Neon-Blauwe Klok */
     #clock {
       font-family: 'Orbitron', sans-serif;
-      font-size: 11vw;
-      font-weight: 700;
+      font-size: 14vw;
+      font-weight: 900;
       color: #00d4ff;
-      text-shadow: 0 0 20px rgba(0, 212, 255, 0.6), 0 0 40px rgba(0, 212, 255, 0.2);
-      line-height: 1.1;
-      margin-bottom: 10px;
+      text-shadow: 0 0 20px rgba(0, 212, 255, 0.8), 0 0 40px rgba(0, 212, 255, 0.4);
+      line-height: 1;
+      margin-bottom: 20px;
     }
 
-    /* Datum weergave (Grijs) */
+    /* Datum weergave */
     #date {
-      font-size: 3.2vw;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 3vw;
       color: #888888;
       letter-spacing: 2px;
-      margin-bottom: 25px;
-      text-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+      margin-bottom: 30px;
+      text-transform: capitalize;
     }
 
     /* Wind Informatie Block */
     #wind-info {
-      font-size: 4vw;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 3.5vw;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 20px;
-      margin-top: 10px;
+      gap: 25px;
     }
 
     /* Windrichting (Wit) */
     #windDir {
       color: #ffffff;
-      font-weight: bold;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+      font-weight: 700;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
     }
 
-    /* Windsnelheid (Dynamische kleur via JS) */
+    /* Windsnelheid */
     #windSpeed {
-      font-weight: bold;
+      font-weight: 700;
       transition: color 0.5s ease;
-      text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
     }
   </style>
 </head>
@@ -99,42 +100,38 @@
     // =========================================================================
     const HA_URL = 'http://192.168.1.108:8123';
     const HA_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJlNjg1MDQ5ZGQyODQ0ZjdlYjMyM2RiN2IyMjk2YjdlOCIsImlhdCI6MTc5MTU1MzU0MSwiZXhwIjoyMTA2OTEzNTQxfQ.TdM9ZKMMa8SyR7DFZPk9Mly96kPyH4LkyvDFCHPg2aw';
-
     // =========================================================================
-    // KLOK & DATUM FUNCTIE
+    // KLOK & DATUM
     // =========================================================================
     function updateClock() {
       const now = new Date();
       
-      // 24-uurs tijdsaanduiding
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
       document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
 
-      // Datumweergave (Nederlands)
       const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
       const dateStr = now.toLocaleDateString('nl-NL', options);
       document.getElementById('date').textContent = dateStr;
     }
 
     // =========================================================================
-    // INBRANDBEVEILIGING (OLED / LCD BURNOUT PREVENTION)
-    // Verschuift het scherm willekeurig max 20px elke 60 seconden
+    // INBRANDBEVEILIGING
     // =========================================================================
     function preventBurnIn() {
       const container = document.getElementById('screensaver-container');
-      const randomX = Math.floor(Math.random() * 41) - 20; // tussen -20px en +20px
-      const randomY = Math.floor(Math.random() * 41) - 20; // tussen -20px en +20px
+      const randomX = Math.floor(Math.random() * 41) - 20;
+      const randomY = Math.floor(Math.random() * 41) - 20;
       container.style.transform = `translate(${randomX}px, ${randomY}px)`;
     }
 
     // =========================================================================
-    // WIND INFORMATIE OPHALEN VIA HOME ASSISTANT API
+    // WINDDATA OPHALEN
     // =========================================================================
     function getWindColor(speedVal) {
       const t = parseInt(speedVal, 10);
-      if (isNaN(t)) return '#00d4ff'; // Standaard blauw bij onbekend
+      if (isNaN(t)) return '#00d4ff';
 
       if (t <= 2) return 'rgb(0, 230, 118)';    /* Groen (<=2 Bft) */
       if (t <= 3) return 'rgb(255, 214, 0)';    /* Geel (3 Bft) */
@@ -158,33 +155,25 @@
           const dataDir = await resDir.json();
           const dataSpeed = await resSpeed.json();
 
-          // Update Windrichting (Wit)
           document.getElementById('windDir').textContent = dataDir.state;
 
-          // Update Windsnelheid + Dynamische Kleur
           const speedElem = document.getElementById('windSpeed');
           speedElem.textContent = `${dataSpeed.state} BFT`;
           speedElem.style.color = getWindColor(dataSpeed.state);
-        } else {
-          console.error('API respons niet OK bij ophalen winddata');
         }
       } catch (error) {
         console.error('Fout bij verbinden met Home Assistant API:', error);
       }
     }
 
-    // =========================================================================
-    // INITIALISATIE & TIMERS
-    // =========================================================================
-    // Direct uitvoeren bij laden
+    // INITIALISATIE
     updateClock();
     preventBurnIn();
     fetchHAWindData();
 
-    // Intervals instellen
-    setInterval(updateClock, 1000);         // Klok elke seconde
-    setInterval(preventBurnIn, 60000);       // Pixel shift elke minuut
-    setInterval(fetchHAWindData, 300000);   // Winddata elke 5 minuten verversen
+    setInterval(updateClock, 1000);
+    setInterval(preventBurnIn, 60000);
+    setInterval(fetchHAWindData, 300000);
   </script>
 </body>
 </html>
