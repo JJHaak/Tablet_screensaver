@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kiosk Digitaal 24h</title>
-  <!-- Google Fonts inladen -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -17,7 +16,7 @@
     }
     body {
       background-color: #000000;
-      color: #00d4ff; /* Lichtblauw digitaal */
+      color: #00d4ff;
       font-family: 'Share Tech Mono', monospace;
       height: 100vh;
       display: flex;
@@ -38,12 +37,9 @@
       letter-spacing: 2px;
       line-height: 1;
       font-variant-numeric: tabular-nums;
-      /* Versterkte neon glow */
       text-shadow: 
-        0 0 10px rgba(0, 212, 255, 0.9),
-        0 0 25px rgba(0, 212, 255, 0.7),
-        0 0 50px rgba(0, 212, 255, 0.4),
-        0 0 80px rgba(0, 212, 255, 0.2);
+        0 0 12px rgba(0, 212, 255, 0.5),
+        0 0 25px rgba(0, 212, 255, 0.2);
     }
     .dots {
       transition: opacity 0.2s ease;
@@ -55,11 +51,10 @@
       font-size: 5.5vw;
       font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      color: #00d4ff;
+      color: #888888;
       margin-top: 25px;
       letter-spacing: 3px;
       text-transform: uppercase;
-      text-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
     }
     .weather-info {
       font-size: 3.2vw;
@@ -70,6 +65,15 @@
       letter-spacing: 2px;
       text-transform: uppercase;
     }
+    .wind-label {
+      color: #888888;
+    }
+    .wind-dir {
+      color: #ffffff;
+    }
+    .wind-speed {
+      color: rgb(0, 200, 0);
+    }
   </style>
 </head>
 <body>
@@ -79,11 +83,14 @@
       <span id="hrs">00</span><span class="dots" id="dot1">:</span><span id="min">00</span><span class="dots" id="dot2">:</span><span id="sec">00</span>
     </div>
     <div id="date" class="date">MAANDAG 1 JANUARI</div>
-    <div id="weather" class="weather-info">WIND: --</div>
+    <div id="weather" class="weather-info">
+      <span class="wind-label">WIND: </span>
+      <span id="windDir" class="wind-dir">--</span> 
+      <span id="windSpeed" class="wind-speed">-- BFT</span>
+    </div>
   </div>
 
   <script>
-    // 1. Klok bijwerken & dubbele punten laten knipperen
     function updateClock() {
       const now = new Date();
 
@@ -95,12 +102,10 @@
       document.getElementById('min').textContent = minutes;
       document.getElementById('sec').textContent = seconds;
 
-      // Knipper-effect voor de dubbele punten op de seconde
       const isEven = now.getSeconds() % 2 === 0;
       document.getElementById('dot1').classList.toggle('dim', !isEven);
       document.getElementById('dot2').classList.toggle('dim', !isEven);
 
-      // Datum weergeven
       const options = { weekday: 'long', day: 'numeric', month: 'long' };
       document.getElementById('date').textContent = now.toLocaleDateString('nl-NL', options);
     }
@@ -108,26 +113,39 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. Inbrandbeveiliging (verschuift de klok heel lichtjes elke 5 minuten)
+    // Inbrandbeveiliging
     setInterval(() => {
       const container = document.getElementById('clockContainer');
-      const randomX = Math.floor(Math.random() * 24) - 12; // -12px tot +12px
-      const randomY = Math.floor(Math.random() * 24) - 12;
+      const randomX = Math.floor(Math.random() * 20) - 10;
+      const randomY = Math.floor(Math.random() * 20) - 10;
       container.style.transform = `translate(${randomX}px, ${randomY}px)`;
     }, 300000);
 
-    // 3. Home Assistant Webhook Ophalen (Windrichting & Windsnelheid)
-    // Vul hier het IP/URL van je Home Assistant en je Webhook ID in:
-    const HA_WEBHOOK_URL = 'http://192.168.1.108:8123/api/webhook/screensaver_wind_info';
+    // Kleurbepaling op basis van vorig project
+    function getWindColor(speedVal) {
+      const t = parseInt(speedVal, 10);
+      if (isNaN(t)) return 'rgb(0, 200, 0)';
+
+      if (t <= 2) return 'rgb(0, 200, 0)';     // Groen
+      if (t <= 3) return 'rgb(200, 200, 0)';   // Geel
+      if (t <= 5) return 'rgb(255, 120, 0)';   // Oranje
+      return 'rgb(255, 0, 50)';                // Rood
+    }
+
+    // HA Webhook ophalen
+    const HA_WEBHOOK_URL = 'http://192.168.1.109:8123/api/webhook/screensaver_wind_info';
 
     async function fetchHAWindData() {
       try {
         const response = await fetch(HA_WEBHOOK_URL);
         if (response.ok) {
           const data = await response.json();
-          // Verwacht JSON formaat van HA: { "direction": "NNO", "speed": "2 Bft" }
           if (data.direction && data.speed) {
-            document.getElementById('weather').textContent = `WIND: ${data.direction} ${data.speed}`;
+            document.getElementById('windDir').textContent = data.direction;
+            
+            const speedElem = document.getElementById('windSpeed');
+            speedElem.textContent = `${data.speed} BFT`;
+            speedElem.style.color = getWindColor(data.speed);
           }
         }
       } catch (error) {
@@ -135,7 +153,6 @@
       }
     }
 
-    // Haal winddata op bij opstarten en daarna elke 5 minuten
     fetchHAWindData();
     setInterval(fetchHAWindData, 300000);
   </script>
