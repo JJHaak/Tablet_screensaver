@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kiosk Digitaal 24h</title>
-  <!-- Digitale / Segment Fonts inladen via Google Fonts -->
+  <!-- Google Fonts inladen -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
     }
     body {
       background-color: #000000;
-      color: #00d4ff; /* 00ff66 Klassiek groen digitaal (verander naar #ffffff voor wit of #ff3300 voor rood) */
+      color: #00d4ff; /* Lichtblauw digitaal */
       font-family: 'Share Tech Mono', monospace;
       height: 100vh;
       display: flex;
@@ -30,44 +30,75 @@
     .clock-container {
       text-align: center;
       position: relative;
+      transition: transform 1s ease-in-out;
     }
     .time {
-      font-size: 20vw; /* Schaalt mee met het scherm */
+      font-size: 20vw;
       font-weight: 700;
       letter-spacing: 2px;
       line-height: 1;
       font-variant-numeric: tabular-nums;
-      /* Optioneel: Digitale LED glow-effect */
-      text-shadow: 0 0 20px rgba(0, 212, 255, 0.6), 0 0 40px rgba(0, 212, 255, 0.2);
+      /* Versterkte neon glow */
+      text-shadow: 
+        0 0 10px rgba(0, 212, 255, 0.9),
+        0 0 25px rgba(0, 212, 255, 0.7),
+        0 0 50px rgba(0, 212, 255, 0.4),
+        0 0 80px rgba(0, 212, 255, 0.2);
+    }
+    .dots {
+      transition: opacity 0.2s ease;
+    }
+    .dots.dim {
+      opacity: 0.15;
     }
     .date {
       font-size: 5.5vw;
       font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      color: #888888;
+      color: #00d4ff;
       margin-top: 25px;
       letter-spacing: 3px;
+      text-transform: uppercase;
+      text-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+    }
+    .weather-info {
+      font-size: 3.2vw;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      color: #888888;
+      margin-top: 20px;
+      letter-spacing: 2px;
       text-transform: uppercase;
     }
   </style>
 </head>
 <body>
 
-  <div class="clock-container">
-    <div id="time" class="time">00:00:00</div>
+  <div class="clock-container" id="clockContainer">
+    <div id="time" class="time">
+      <span id="hrs">00</span><span class="dots" id="dot1">:</span><span id="min">00</span><span class="dots" id="dot2">:</span><span id="sec">00</span>
+    </div>
     <div id="date" class="date">MAANDAG 1 JANUARI</div>
+    <div id="weather" class="weather-info">WIND: --</div>
   </div>
 
   <script>
+    // 1. Klok bijwerken & dubbele punten laten knipperen
     function updateClock() {
       const now = new Date();
 
-      // 24-uurs weergave afdwingen (HH:mm:ss)
       const hours = String(now.getHours()).padStart(2, '0');
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
       
-      document.getElementById('time').textContent = `${hours}:${minutes}:${seconds}`;
+      document.getElementById('hrs').textContent = hours;
+      document.getElementById('min').textContent = minutes;
+      document.getElementById('sec').textContent = seconds;
+
+      // Knipper-effect voor de dubbele punten op de seconde
+      const isEven = now.getSeconds() % 2 === 0;
+      document.getElementById('dot1').classList.toggle('dim', !isEven);
+      document.getElementById('dot2').classList.toggle('dim', !isEven);
 
       // Datum weergeven
       const options = { weekday: 'long', day: 'numeric', month: 'long' };
@@ -76,6 +107,37 @@
 
     setInterval(updateClock, 1000);
     updateClock();
+
+    // 2. Inbrandbeveiliging (verschuift de klok heel lichtjes elke 5 minuten)
+    setInterval(() => {
+      const container = document.getElementById('clockContainer');
+      const randomX = Math.floor(Math.random() * 24) - 12; // -12px tot +12px
+      const randomY = Math.floor(Math.random() * 24) - 12;
+      container.style.transform = `translate(${randomX}px, ${randomY}px)`;
+    }, 300000);
+
+    // 3. Home Assistant Webhook Ophalen (Windrichting & Windsnelheid)
+    // Vul hier het IP/URL van je Home Assistant en je Webhook ID in:
+    const HA_WEBHOOK_URL = 'http://192.168.1.108:8123/api/webhook/screensaver_wind_info';
+
+    async function fetchHAWindData() {
+      try {
+        const response = await fetch(HA_WEBHOOK_URL);
+        if (response.ok) {
+          const data = await response.json();
+          // Verwacht JSON formaat van HA: { "direction": "NNO", "speed": "2 Bft" }
+          if (data.direction && data.speed) {
+            document.getElementById('weather').textContent = `WIND: ${data.direction} ${data.speed}`;
+          }
+        }
+      } catch (error) {
+        console.log('Fout bij ophalen HA data:', error);
+      }
+    }
+
+    // Haal winddata op bij opstarten en daarna elke 5 minuten
+    fetchHAWindData();
+    setInterval(fetchHAWindData, 300000);
   </script>
 
 </body>
