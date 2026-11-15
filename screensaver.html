@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kiosk Digitaal 24h</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="config.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #000000;
+      color: #00d4ff;
+      font-family: 'Share Tech Mono', monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      user-select: none;
+    }
+    .clock-container {
+      text-align: center;
+      position: relative;
+      transition: transform 1s ease-in-out;
+      will-change: transform;
+    }
+    .kiosk-card {
+      border: 2px solid rgba(0, 212, 255, 0.4);
+      border-radius: 12px;
+      padding: 30px 60px;
+      background-color: rgba(0, 10, 20, 0.6);
+      box-shadow: 0 0 25px rgba(0, 212, 255, 0.15), inset 0 0 15px rgba(0, 212, 255, 0.05);
+      backdrop-filter: blur(5px);
+      margin-bottom: 25px;
+      display: inline-block;
+    }
+    .info-row-top {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 3.5vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      flex-wrap: wrap;
+    }
+    .info-row-top-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #evPlugIcon svg {
+      width: 1.1em;
+      height: 1.1em;
+      vertical-align: middle;
+      transition: fill 0.5s ease;
+    }
+    #evChargeTime {
+      color: rgb(76, 175, 80);
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .time {
+      font-size: 20vw;
+      font-weight: 700;
+      letter-spacing: 2px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      color: #00d4ff;
+      text-shadow: 
+        0 0 8px  rgba(0, 212, 255, 0.9),
+        0 0 18px rgba(0, 212, 255, 0.5),
+        0 0 30px rgba(0, 212, 255, 0.2);
+    }
+    .date {
+      font-size: 5.5vw;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      color: #a0a0a0;
+      margin-top: 20px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .info-row {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 4.5vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      margin-top: 25px;
+      font-weight: 700;
+    }
+    .info-row-sub {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2.5vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      margin-top: 12px;
+      font-weight: 700;
+      color: #888888;
+    }
+    .info-label {
+      font-size: 2.6vw;
+      color: #ffffff;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
+    }
+    .info-label-sub {
+      font-size: 1.5vw;
+      color: #aaaaaa;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .info-separator {
+      margin: 0 10px;
+      font-size: 3.8vw;
+      display: inline-block;
+      transform: scaleX(-1);
+    }
+    #windDir, #windDirSub {
+      color: #ffffff;
+    }
+    #windSpeed, #tempVal, #tempValSub, #windSpeedSub {
+      transition: color 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="clock-container" id="screensaver-container">
+    <div class="info-row-top">
+      <div class="info-row-top-main">
+        <span id="evPlugIcon">
+          <svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V4C20 2.9 19.1 2 18 2M18 20H6V4H18V20M14.5 13.5C14.5 14.33 13.83 15 13 15V18H11V15C10.17 15 9.5 14.33 9.5 13.5V10.5C9.5 9.67 10.17 9 11 9H13C13.83 9 14.5 9.67 14.5 10.5V13.5M7.5 7H16.5V5H7.5V7Z" /></svg>
+        </span>
+        <span>Ioniq 5:</span>
+        <span id="evStatusVal">--%</span>
+      </div>
+      <div id="evChargeTime"></div>
+    </div>
+    <div class="kiosk-card">
+      <div id="time" class="time">00:00:00</div>
+      <div id="date" class="date">MAANDAG 1 JANUARI</div>
+    </div>
+    <div class="info-row">
+      <span class="info-label">buiten:</span>
+      <span id="tempVal">-- °C</span>
+      <span class="info-separator">🚴</span>
+      <span class="info-label">wind:</span>
+      <span id="windDir">--</span>
+      <span id="windSpeed">-- BFT</span>
+    </div>
+    <div class="info-row-sub">
+      <span class="info-label-sub">Temp +2u:</span>
+      <span id="tempValSub">-- °C</span>
+      <span class="info-label-sub">wind +2u:</span>
+      <span id="windDirSub">--</span>
+      <span id="windSpeedSub">-- BFT</span>
+    </div>
+  </div>
+  <script>
+    var HA_URL = window.location.origin;
+    function padZero(num) {
+      return (num < 10 ? '0' : '') + num;
+    }
+    function updateClock() {
+      try {
+        var now = new Date();
+        var hours = padZero(now.getHours());
+        var minutes = padZero(now.getMinutes());
+        var seconds = padZero(now.getSeconds());
+        document.getElementById('time').textContent = hours + ':' + minutes + ':' + seconds;
+        var options = { weekday: 'long', day: 'numeric', month: 'long' };
+        document.getElementById('date').textContent = now.toLocaleDateString('nl-NL', options);
+      } catch (e) {
+        console.error('Klok fout:', e);
+      }
+    }
+    function preventBurnIn() {
+      try {
+        var container = document.getElementById('screensaver-container');
+        var randomX = Math.floor(Math.random() * 21) - 10;
+        var randomY = Math.floor(Math.random() * 21) - 10;
+        container.style.transform = 'translate(' + randomX + 'px, ' + randomY + 'px)';
+      } catch (e) {}
+    }
+    function degreesToCompass(deg) {
+      var val = parseFloat(deg);
+      if (isNaN(val)) return deg;
+      var directions = [
+        "N", "NNO", "NO", "ONO", 
+        "O", "OZO", "ZO", "ZZO", 
+        "Z", "ZZW", "ZW", "WZW", 
+        "W", "WNW", "NW", "NNW"
+      ];
+      var index = Math.round(val / 22.5) % 16;
+      return directions[index];
+    }
+    function getWindColor(speedVal) {
+      var t = parseInt(speedVal, 10);
+      if (isNaN(t)) return '#00d4ff';
+      if (t <= 2) return 'rgb(0, 230, 118)';
+      if (t <= 3) return 'rgb(255, 214, 0)';
+      if (t <= 5) return 'rgb(255, 145, 0)';
+      return 'rgb(255, 23, 68)';
+    }
+    function getTempColor(tempVal) {
+      var t = parseFloat(tempVal);
+      if (isNaN(t)) return '#00d4ff';
+      if (t < 0) return 'rgb(0, 212, 255)';
+      if (t < 10) return 'rgb(0, 230, 118)';
+      if (t < 20) return 'rgb(255, 214, 0)';
+      if (t < 25) return 'rgb(255, 145, 0)';
+      return 'rgb(255, 23, 68)';
+    }
+    function fetchEntity(entityId, headers) {
+      return fetch(HA_URL + '/api/states/' + entityId, { headers: headers })
+        .then(function(res) {
+          if (!res.ok) throw new Error('Netwerk fout bij ' + entityId);
+          return res.json();
+        })
+        .catch(function(err) {
+          console.warn('Kon entiteit niet ophalen:', entityId, err);
+          return null;
+        });
+    }
+    function fetchHAData() {
+      var token = (typeof HA_TOKEN !== 'undefined') ? HA_TOKEN : '';
+      var headers = {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      };
+      Promise.all([
+        fetchEntity('sensor.weerlive_wind_direction', headers),
+        fetchEntity('sensor.weerlive_windforce', headers),
+        fetchEntity('sensor.hue_outdoor_sensor_noord_oost_temperature', headers),
+        fetchEntity('sensor.temperatuur_over_2_uur', headers),
+        fetchEntity('sensor.windkracht_over_2_uur', headers),
+        fetchEntity('sensor.windrichting_over_2_uur', headers),
+        fetchEntity('binary_sensor.ioniq_5_ev_battery_plug', headers),
+        fetchEntity('sensor.ioniq_5_ev_battery_level', headers),
+        fetchEntity('number.ioniq_5_ac_charging_limit', headers),
+        fetchEntity('switch.ioniq_5_ioniq_5_ev_charging', headers),
+        fetchEntity('sensor.ioniq_5_estimated_charge_duration', headers)
+      ]).then(function(results) {
+        var dataDir = results[0];
+        var dataSpeed = results[1];
+        var dataTemp = results[2];
+        var dataTemp2h = results[3];
+        var dataSpeed2h = results[4];
+        var dataDir2h = results[5];
+        var dataEvPlug = results[6];
+        var dataEvBat = results[7];
+        var dataEvLimit = results[8];
+        var dataEvCharging = results[9];
+        var dataEvChargeTime = results[10];
+        if (dataDir && dataDir.state && dataDir.state !== 'unknown' && dataDir.state !== 'unavailable') {
+          document.getElementById('windDir').textContent = degreesToCompass(dataDir.state);
+        }
+        if (dataSpeed && dataSpeed.state && !isNaN(dataSpeed.state)) {
+          var speedElem = document.getElementById('windSpeed');
+          speedElem.textContent = dataSpeed.state + ' BFT';
+          speedElem.style.color = getWindColor(dataSpeed.state);
+        }
+        if (dataTemp && dataTemp.state && !isNaN(dataTemp.state)) {
+          var tempElem = document.getElementById('tempVal');
+          tempElem.textContent = parseFloat(dataTemp.state).toFixed(1) + ' °C';
+          tempElem.style.color = getTempColor(dataTemp.state);
+        }
+        if (dataTemp2h && dataTemp2h.state && !isNaN(dataTemp2h.state)) {
+          var tempSubElem = document.getElementById('tempValSub');
+          tempSubElem.textContent = parseFloat(dataTemp2h.state).toFixed(1) + ' °C';
+          tempSubElem.style.color = getTempColor(dataTemp2h.state);
+        }
+        if (dataDir2h && dataDir2h.state && dataDir2h.state !== 'unknown' && dataDir2h.state !== 'unavailable') {
+          document.getElementById('windDirSub').textContent = degreesToCompass(dataDir2h.state);
+        }
+        if (dataSpeed2h && dataSpeed2h.state && !isNaN(dataSpeed2h.state)) {
+          var speedSubElem = document.getElementById('windSpeedSub');
+          speedSubElem.textContent = dataSpeed2h.state + ' BFT';
+          speedSubElem.style.color = getWindColor(dataSpeed2h.state);
+        }
+        var isPlugged = dataEvPlug && (dataEvPlug.state === 'on' || dataEvPlug.state === 'true');
+        var isCharging = dataEvCharging && (dataEvCharging.state === 'on' || dataEvCharging.state === 'true');
+        var bat = (dataEvBat && !isNaN(dataEvBat.state)) ? parseFloat(dataEvBat.state) : 0;
+        var limit = (dataEvLimit && !isNaN(dataEvLimit.state)) ? parseFloat(dataEvLimit.state) : 100;
+        var plugIconElem = document.getElementById('evPlugIcon');
+        var statusValElem = document.getElementById('evStatusVal');
+        var chargeTimeElem = document.getElementById('evChargeTime');
+        if (isPlugged) {
+          plugIconElem.style.color = 'rgb(76, 175, 80)';
+        } else {
+          plugIconElem.style.color = 'rgb(244, 67, 54)';
+        }
+        if (bat >= limit) {
+          statusValElem.textContent = bat + '% (' + limit + ')';
+          statusValElem.style.color = 'rgb(76, 175, 80)';
+          chargeTimeElem.textContent = '';
+        } else if (isCharging) {
+          statusValElem.textContent = 'Laden ' + bat + '% (' + limit + ')';
+          statusValElem.style.color = 'rgb(0, 0, 255)';
+          if (dataEvChargeTime && dataEvChargeTime.state && !isNaN(dataEvChargeTime.state)) {
+            var totalMinutes = parseInt(dataEvChargeTime.state, 10);
+            if (totalMinutes > 0) {
+              var targetDate = new Date(new Date().getTime() + totalMinutes * 60000);
+              var hours = padZero(targetDate.getHours());
+              var minutes = padZero(targetDate.getMinutes());
+              chargeTimeElem.textContent = hours + ':' + minutes;
+            } else {
+              chargeTimeElem.textContent = '';
+            }
+          } else {
+            chargeTimeElem.textContent = '';
+          }
+        } else {
+          statusValElem.textContent = (bat > 0 ? bat + '%' : '--%') + ' (' + limit + ')';
+          statusValElem.style.color = '#888888';
+          chargeTimeElem.textContent = '';
+        }
+      });
+    }
+    updateClock();
+    preventBurnIn();
+    fetchHAData();
+    setInterval(updateClock, 1000);
+    setInterval(preventBurnIn, 60000);
+    setInterval(fetchHAData, 300000);
+  </script>
+</body>
+</html>
